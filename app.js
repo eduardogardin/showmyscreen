@@ -5,14 +5,13 @@ var io = require('socket.io')(server);
 var bodyParser = require('body-parser');
 var fs = require('fs');
 var path = require("path");
-var os = require('os');
-var exec = require('child_process').exec;
-var child;
+var sr = require('screenres');
 const imagemin = require('imagemin');
 const imageminMozjpeg = require('imagemin-mozjpeg');
 const imageminPngquant = require('imagemin-pngquant');
 const util = require('./util')
-
+const screenshot = require('screenshot-node');
+const resolution = sr.get();
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
@@ -20,21 +19,19 @@ app.use(bodyParser.json());
 var port = process.argv[2]
 var timeGetScreen = process.argv[3]
 
-function getScreen(){
-  //var cmd = __dirname+'/nircmd.fbi savescreenshot www/images/screen.png';
-  var cmd = __dirname+'/cmdcapture.fbi /f screen.png';
-  child = exec(cmd,
-    function (error, stdout, stderr) {
-      imagemin(['./screen.png'], './www/images', {
-          plugins: [
-              imageminMozjpeg({targa: true}),
-              imageminPngquant({quality: '65-80'})
-          ]
-      }).then(files => {
-          io.sockets.emit('showscreen');
-          setTimeout(getScreen, timeGetScreen);
-      });
-  });
+function getScreen() {
+
+  screenshot.saveScreenshot(0, 0, resolution[0], resolution[1], "screen.png", err => console.log({err}) );
+
+  imagemin(['./screen.png'], './www/images', {
+      plugins: [
+          imageminMozjpeg({targa: true}),
+          imageminPngquant({quality: '65-80'})
+      ]
+  }).then(files => {
+      io.sockets.emit('showscreen');
+      setTimeout(getScreen, timeGetScreen);
+  });  
 }
 
 getScreen();
